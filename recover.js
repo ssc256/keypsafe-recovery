@@ -3063,19 +3063,39 @@ function parseArgs(args) {
   return { backupPath, outputFile, useStdout };
 }
 function promptHidden(question) {
-  return new Promise((resolve2) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: true
+  process.stderr.write(question);
+  if (process.stdin.isTTY) {
+    return new Promise((resolve2, reject) => {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding("utf8");
+      let input = "";
+      function onData(char) {
+        if (char === "\n" || char === "\r" || char === "") {
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
+          process.stdin.removeListener("data", onData);
+          process.stderr.write("\n");
+          resolve2(input);
+        } else if (char === "") {
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
+          process.stderr.write("\n");
+          reject(new Error("Cancelled"));
+        } else if (char === "\x7F" || char === "\b") {
+          input = input.slice(0, -1);
+        } else {
+          input += char;
+        }
+      }
+      process.stdin.on("data", onData);
     });
-    process.stderr.write(question);
-    rl._writeToOutput = (s) => {
-      if (s === "\r\n" || s === "\n" || s === "\r") process.stdout.write("\n");
-    };
-    rl.question("", (answer) => {
+  }
+  return new Promise((resolve2) => {
+    const rl = readline.createInterface({ input: process.stdin });
+    rl.once("line", (line) => {
       rl.close();
-      resolve2(answer.trim());
+      resolve2(line.trim());
     });
   });
 }
