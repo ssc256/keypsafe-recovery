@@ -3069,7 +3069,7 @@ function promptHidden(question) {
       output: process.stdout,
       terminal: true
     });
-    process.stdout.write(question);
+    process.stderr.write(question);
     rl._writeToOutput = (s) => {
       if (s === "\r\n" || s === "\n" || s === "\r") process.stdout.write("\n");
     };
@@ -3127,7 +3127,7 @@ async function main() {
     process.exit(1);
   }
   const password = await promptHidden("Password: ");
-  const paperKeyB64url = await promptHidden("Paper key (Base64URL): ");
+  const paperKeyB64url = await promptHidden("Recovery key (Base64URL): ");
   if (!password || !paperKeyB64url) {
     console.error("Password and paper key are required.");
     process.exit(1);
